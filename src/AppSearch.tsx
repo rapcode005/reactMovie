@@ -4,7 +4,7 @@ import {Button} from 'react-bootstrap';
 import axios, { AxiosResponse } from "axios"
 import PropTypes from 'prop-types';
 import {Genre} from './Genre';
-import {Title} from './Title';
+import {TitleSearch} from './TitleSearch';
 import {People} from './People';
 import {RouteComponentProps} from 'react-router';
 
@@ -13,7 +13,16 @@ interface GenreLists {
   name: string,
 }
 
-export const App = () => {
+interface MatchParams {
+    ty?: string,
+    t?: string,
+    g?: string
+}
+
+interface Props extends RouteComponentProps<MatchParams> {
+}
+
+export const AppSearch = ({ match }: RouteComponentProps<MatchParams>) => {
   //const params = new URLSearchParams(window.location.search)
   const genreProps:GenreLists[] = [];
   const [genreList, setGenreList]: [GenreLists[], (data: GenreLists[]) => void] = useState(genreProps);
@@ -23,6 +32,8 @@ export const App = () => {
   const [genreGrp, setGenreGrp] = useState(false);
   const [category, setCategory] = useState(0);
   const [idG, setIDG] = useState(0);
+  const [genreSelected, setGenreSelected] = useState("");
+  const { params } = match;
 
   let api = 'e9029bc5d239bd2ec48b1330a107bb22';
 
@@ -36,14 +47,20 @@ export const App = () => {
     setGenreSelect(genre);
   }
 
-  const handleCategory = (e: any) => {
-    let category = e.target.value;
-    if (category == 1) {
+
+ const checkCategory = (v: number) => {
+    if (v == 1) {
       setGenreGrp(true);
     }
     else {
       setGenreGrp(false);
     }
+    //setCategory(v);
+ }
+
+  const handleCategory = (e: any) => {
+    let category = e.target.value;
+    checkCategory(category);
     setCategory(category);
   }
 
@@ -51,10 +68,17 @@ export const App = () => {
       fetch('http://localhost:8080/api/movies/genre?api_key=' + api, requestOptions)
       .then(resps => resps.json())
       .then(data => {
+          console.log(params.t);
           setGenreList(data.genres);
+          setSearchTitle(params.t != null && params.t != "" ? params.t : "");
+          let category = params.ty != null ? +params.ty : 0;
+          checkCategory(category);
+          setCategory(category);
+          let genre = params.g != null ? params.g : "-1";
+          setGenreSelected(genre);
       })
 
-    }, []);
+    }, [params]);
 
   return (
     <React.StrictMode> 
@@ -63,7 +87,7 @@ export const App = () => {
               <div className="input-group">
                 <div className="h-25 d-inline-block ml-1">
                   <div className="input-group-sm mb-3">
-                    <select className="custom-select" onChange={handleCategory} >
+                    <select value={category.toString()} className="custom-select" onChange={handleCategory} >
                       <option value="0">Title</option>
                       <option value="1">Genre</option>
                       <option value="2">People</option>
@@ -72,12 +96,12 @@ export const App = () => {
                 </div>
                 {
                   genreGrp ?
-                    <Genre id={idG} genreList={genreList} />
+                    <Genre id={category} genreId={genreSelected} genreList={genreList} />
                     :
                       category == 2 ?
                       <People />
                       :
-                      <Title genreList={genreList} />
+                      <TitleSearch name={searchTitle} genreList={genreList} />
                   }
               </div>
             </div>
